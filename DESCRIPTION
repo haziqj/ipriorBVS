@@ -1,7 +1,7 @@
 Package: ipriorBVS
 Type: Package
 Title: Bayesian Variable Selection using I-priors
-Version: 0.1.0-9000
+Version: 0.1.0-9001
 Authors@R: person("Haziq", "Jamil", email = "haziq.jamil@gmail.com",
                   role = c("aut", "cre"))
 Encoding: UTF-8
