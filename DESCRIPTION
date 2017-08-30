@@ -1,16 +1,18 @@
 Package: ipriorBVS
 Type: Package
 Title: Bayesian Variable Selection using I-priors
-Version: 0.1.0-9001
+Version: 0.1.0.9002
 Authors@R: person("Haziq", "Jamil", email = "haziq.jamil@gmail.com",
                   role = c("aut", "cre"))
 Encoding: UTF-8
 Description: Performs Bayesian Variable Selection using I-priors.
-Depends:
-    R (>= 3.3.1)
 Imports:
     coda,
     runjags,
-    R2jags
+    R2jags,
+    iprior,
+    ggplot2
 LazyData: TRUE
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
+Suggests: testthat
+License: GPL-3 + file LICENSE
