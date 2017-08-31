@@ -1,59 +1,90 @@
+runjags::runjags.options(
+  silent.runjags = TRUE,
+  silent.jags = FALSE,
+  summary.warning = FALSE,
+  rng.warning = FALSE
+)
+
 #' @export
 ipriorBVS <- function(...) {
   UseMethod("ipriorBVS")
 }
 
 #' @export
-ipriorBVS.default <- function(y = Y, x = X, mod = mod.ipriorBVS,
-                              control = list(), ...) {
-  X <- as.matrix(x)
-  Y <- as.vector(y)
+ipriorBVS.default <- function(y, X, model = "iprior_sing",
+                              n.chains = parallel::detectCores(),
+                              n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
+                              n.thin = 1, n.par = n.chains, ...) {
+  y <- as.numeric(scale(y, scale = FALSE, center = FALSE))
+  X <- scale(X, scale = FALSE, center = FALSE)
   XTX <- crossprod(X)
   XTX.inv <- solve(XTX)
   p <- ncol(X)
   n <- nrow(X)
+  xnames <- colnames(X)
+  # if (paste0("X", 1:p)
 
-  # Default control for jags ---------------------------------------------------
-  con <- list(n.chains = 4, n.iter = 5000, n.burnin = 2500, n.thin = 1)
-  con_names <- names(con)
-  con[(control_names <- names(control))] <- control
-  if (length(noNms <- control_names[!control_names %in% con_names])) {
-    warning("Unknown names in control options: ", paste(noNms, collapse = ", "),
-            call. = FALSE)
-  }
-  control <- con
+  model <- match.arg(model, c(
+    "iprior_sing",
+    "iprior_mult",
+    "iprior_mult_fixed",
+    "flat_prior",
+    "gprior"
+  ))
+
+  # # Default control for jags ---------------------------------------------------
+  # con <- list(n.chains = 4, n.iter = 5000, n.burnin = 2500, n.thin = 1)
+  # con_names <- names(con)
+  # con[(control_names <- names(control))] <- control
+  # if (length(noNms <- control_names[!control_names %in% con_names])) {
+  #   warning("Unknown names in control options: ", paste(noNms, collapse = ", "),
+  #           call. = FALSE)
+  # }
+  # control <- con
 
   # Linear model ---------------------------------------------------------------
-  mod.lm <- lm(Y ~ 1 + X)
+  mod.lm <- lm(y ~ 1 + X)
   beta.ols <- coef(summary(mod.lm))[, 1]
   sigma.ols <- summary(mod.lm)$sigma
   sigma.beta <- summary(mod.lm)$coefficients[, 2]
 
   # Bayesian Variable Selection ------------------------------------------------
-  mod.data <- list(Y = Y, X = X, XTX.inv = XTX.inv, n = n, p = p)
-  mod.params <- c("alpha", "Beta", "Gamma")
-  mod.inits <- function() {
-    list(tau = 1 / sigma.ols ^ 2, Beta = beta.ols[-1], Gamma = rep(1,p),
-         lambda = 1)
+  pi <- pi
+  # Initial values
+  alpha <- beta.ols[1]
+  beta <- beta.ols[-1]
+  psi <- 1 / sigma.ols ^ 2
+  gamma <- rep(1, p)
+  if (model == "iprior_sing") {
+    bvs_model <- bvs_iprior_sing
+    lambda <- 1
   }
-  mod.fit <- R2jags::jags(
-    data  = mod.data,
-    inits = mod.inits,
-    parameters.to.save = mod.params,
-    n.chains   = control$n.chains,
-    n.iter     = control$n.iter,
-    n.burnin   = control$n.burnin,
-    model.file = mod,
-    n.thin     = control$n.thin,
-    DIC        = FALSE
-  )
+  if (model == "iprior_mult") {
+    bvs_model <- bvs_iprior_mult
+    lambda <- rep(1, p)
+  }
+  if (model == "iprior_mult_fixed") {
+    bvs_model <- bvs_iprior_mult_fixed
+    mod <- iprior_canonical(y, X)
+    lambda <- mod$lambda
+    B <- diag(1 / lambda) %*% XTX.inv %*% diag(1 / lambda)
+  }
+  if (model == "flat_prior") {
+    bvs_model <- bvs_independent
+  }
+  if (model == "gprior") {
+    bvs_model <- bvs_independent
+  }
+
+  # Run model
+  mod.fit <- runjags::run.jags(bvs_model, n.chains = n.chains, burnin = n.burnin,
+                               adapt = n.adapt, sample = n.samp / n.chains,
+                               thin = n.thin, method = "parallel", n.sims = n.par)
+  cat("\n")
 
   # Results --------------------------------------------------------------------
-  mod.fit.mcmc <- coda::as.mcmc(mod.fit)
-  gam.ind <- grep("Gam", colnames(runjags::combine.mcmc(mod.fit.mcmc)))
-  gam.dat <- runjags::combine.mcmc(mod.fit.mcmc)[, gam.ind]
-  # res <- fn.resy(gam.dat)
-  res <- list(mod.fit = mod.fit, gam.dat = gam.dat, xnames = paste0("X", 1:p))
+  mod.fit <- runjags::combine.mcmc(mod.fit)
+  res <- list(mcmc = mod.fit, xnames = xnames)
 
   # Output ---------------------------------------------------------------------
   class(res) <- "ipriorBVS"
@@ -61,77 +92,35 @@ ipriorBVS.default <- function(y = Y, x = X, mod = mod.ipriorBVS,
 }
 
 ipriorBVS.formula <- function(formula, data = parent.frame(),
-                              mod = mod.ipriorBVS, control = list(), ...) {
+                              model = "iprior_sing",
+                              n.chains = parallel::detectCores(),
+                              n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
+                              n.thin = 1, n.par = n.chains, ...) {
+  if (is.ipriorBVS_data(data)) data <- as.data.frame(data)
   mf <- model.frame(formula = formula, data = data)
   tt <- terms(mf)
   Terms <- delete.response(tt)
   X <- model.frame(Terms, mf)
   Y <- model.response(mf)
-  res <- ipriorBVS.default(y = Y, x = X, mod = mod, control = control)
+  colnames(X)
+  res <- ipriorBVS.default(Y, X, model, n.chains, n.samp, n.burnin, n.adapt, n.thin,
+                           n.par, ...)
   res
 }
 
 #' @export
-print.ipriorBVS <- function(x) {
-  gam.summary <- fn.resy(x$gam.dat, x$xnames)
-  print(head(gam.summary, 5))
+print.ipriorBVS <- function(x, n = 5) {
+  gam.summary <- tabulate_models(x$mcmc)
+  rownames(gam.summary)[seq_along(x$xnames)] <- x$xnames
+  no.of.cols <- min(n + 1, ncol(gam.summary))
+  print(gam.summary[, seq_len(no.of.cols)])
 }
 
 #' @export
 summary.ipriorBVS <- function(x) {
-  print(x$mod.fit)
+  summary(x$mcmc)
 }
 
-## I-prior BVS -----------------------------------------------------------------
-#' @export
-mod.ipriorBVS <- function() {
-  for (j in 1:p) { gb[j] <- Gamma[j] * Beta[j] }
 
-  for (i in 1:n) {
-    Y[i] ~ dnorm(mu[i], tau)
-    mu[i] <- alpha + inprod(X[i,1:p], gb[1:p])
-  }
 
-  tau ~ dgamma(0.01, 0.01)
-  for (j in 1:p) { Gamma[j] ~ dbern(0.5) }
-  Beta[1:p] ~ dmnorm(mu0, XTX.inv / (tau * lambda ^ 2))
-  alpha ~ dnorm(0, 0.01)
-  for (j in 1:p) { mu0[j] <- 0 }
-  lambda ~ dunif(0, 100)
-}
-
-## Functions to analyse results ------------------------------------------------
-fn4a <- function(x, varname){ 	#picks out correct choices.
-  y <- as.numeric(x)
-  if (sum(y) == 0) tmp <- "Intercept only"
-  else tmp <- paste((varname)[y == 1], sep = "", collapse = " ")
-  tmp
-}
-
-# fn4b <- function(x){		#counts false choices
-# y <- as.numeric(x)
-# this <- as.numeric(beta.true > 0)
-# tmp <- as.character(sum(y != this))
-# if(tmp == "0") tmp <- "None"
-# tmp
-# }
-
-# fn4c <- function(x){		#counts false choices
-# y <- as.numeric(x)
-# this <- as.numeric(beta.true > 0)
-# tmp <- as.character(sum(y != this))
-# tmp
-# }
-
-#' @export
-fn.resy <- function(x, xnames){
-  model <- apply(x, 1, fn4a, varname = xnames)
-  tab <- sort(table(model)  / length(model), decreasing = TRUE)
-  ind <- (1:length(tab))[row.names(tab) == "None"]
-  if (sum(row.names(tab) == "None") == 0) ind <- NA
-  tab <- cbind(tab, tab[ind] / tab)
-  colnames(tab) <- c("prop", "odds")
-  # tab[order(rownames(tab)), ]
-  tab
-}
 

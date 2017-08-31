@@ -9,7 +9,6 @@ Description: Performs Bayesian Variable Selection using I-priors.
 Imports:
     coda,
     runjags,
-    R2jags,
     iprior,
     ggplot2
 LazyData: TRUE
