@@ -11,9 +11,7 @@ bvs_iprior_sing <-
 
   # Priors
   psi ~ dgamma(0.001, 0.001)
-  for (j in 1:p) {
-    gamma[j] ~ dbern(0.5)
-  }
+  for (j in 1:p) { gamma[j] ~ dbern(gamma.prob[j]) }
   beta[1:p] ~ dmnorm(mu0, XTX.inv / (psi * lambda ^ 2))
   alpha ~ dnorm(0, 0.001)
   for (j in 1:p) {
@@ -28,7 +26,7 @@ bvs_iprior_sing <-
   deviance <- sum(d)
 }
 
-#data# y, X, XTX.inv, n, p, pi
+#data# y, X, XTX.inv, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi, lambda
 #monitor# gamma, beta, alpha, psi, deviance
 "
@@ -46,9 +44,9 @@ bvs_iprior_mult <- "model{
   # Priors
   psi ~ dgamma(0.001, 0.001)
   alpha ~ dnorm(0, 0.001)
-  for (j in 1:p) { gamma[j] ~ dbern(0.5) }
+  for (j in 1:p) { gamma[j] ~ dbern(gamma.prob[j]) }
   for (j in 1:p) { mu0[j] <- 0 }
-  for (j in 1:p) { lambda[j] ~ dunif(0, 100) }
+  for (j in 1:p) { lambda[j] ~ dgamma(0.1, 0.1) }
   for (j in 1:p) {
     for (k in 1:p) {
       lambda.inv[j,k] <- equals(j,k) / lambda[k]
@@ -56,11 +54,17 @@ bvs_iprior_mult <- "model{
   }
   B <- lambda.inv[1:p, 1:p] %*% XTX.inv %*% lambda.inv[1:p, 1:p] / psi
   beta[1:p] ~ dmnorm(mu0, B)
+
+  # Deviance
+  for (i in 1:n) {
+    d[i] <- log(2 * pi) - log(psi) + psi * pow(y[i] - mu[i], 2)
+  }
+  deviance <- sum(d)
 }
 
-#data# y, X, XTX.inv, n, p
+#data# y, X, XTX.inv, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi, lambda
-#monitor# gamma, beta, alpha, psi, deviance
+#monitor# gamma, beta, alpha, psi, deviance, lambda
 "
 
 bvs_iprior_mult_fixed <- "model{
@@ -76,12 +80,18 @@ bvs_iprior_mult_fixed <- "model{
   # Priors
   psi ~ dgamma(0.001, 0.001)
   alpha ~ dnorm(0, 0.001)
-  for (j in 1:p) { gamma[j] ~ dbern(0.5) }
+  for (j in 1:p) { gamma[j] ~ dbern(gamma.prob[j]) }
   for (j in 1:p) { mu0[j] <- 0 }
   beta[1:p] ~ dmnorm(mu0, B / psi)
+
+  # Deviance
+  for (i in 1:n) {
+    d[i] <- log(2 * pi) - log(psi) + psi * pow(y[i] - mu[i], 2)
+  }
+  deviance <- sum(d)
 }
 
-#data# y, X, B, n, p
+#data# y, X, B, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi
 #monitor# gamma, beta, alpha, psi, deviance
 "
@@ -99,7 +109,7 @@ bvs_independent <- "model{
   # Priors
   psi ~ dgamma(0.001, 0.001)
   for (j in 1:p) {
-    gamma[j] ~ dbern(0.5)
+    gamma[j] ~ dbern(gamma.prob[j])
     beta[j] ~ dnorm(0, 0.001)
   }
   alpha ~ dnorm(0, 0.001)
@@ -111,7 +121,7 @@ bvs_independent <- "model{
   deviance <- sum(d)
 }
 
-#data# y, X, n, p, pi
+#data# y, X, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi
 #monitor# gamma, beta, alpha, psi, deviance
 "
@@ -129,7 +139,7 @@ bvs_gprior <- "model{
   # Priors
   psi ~ dgamma(0.001, 0.001)
   for (j in 1:p) {
-    gamma[j] ~ dbern(0.5)
+    gamma[j] ~ dbern(gamma.prob[j])
     mu0[j] <- 0
   }
   alpha ~ dnorm(0, 0.001)
@@ -142,7 +152,7 @@ bvs_gprior <- "model{
   deviance <- sum(d)
 }
 
-#data# y, X, n, p, pi
+#data# y, X, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi
 #monitor# gamma, beta, alpha, psi, deviance
 "

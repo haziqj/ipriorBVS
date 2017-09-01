@@ -13,18 +13,18 @@ ipriorBVS <- function(...) {
 }
 
 #' @export
-ipriorBVS.default <- function(y, X, model = "iprior_sing",
+ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
+                              stand.x = TRUE, stand.y = TRUE,
                               n.chains = parallel::detectCores(),
                               n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
                               n.thin = 1, n.par = n.chains, ...) {
-  y <- as.numeric(scale(y, scale = FALSE, center = FALSE))
-  X <- scale(X, scale = FALSE, center = FALSE)
+  y <- as.numeric(scale(y, scale = stand.y, center = stand.y))
+  X <- scale(X, scale = stand.x, center = stand.x)
   XTX <- crossprod(X)
   XTX.inv <- solve(XTX)
   p <- ncol(X)
   n <- nrow(X)
   xnames <- colnames(X)
-  # if (paste0("X", 1:p)
 
   model <- match.arg(model, c(
     "iprior_sing",
@@ -58,12 +58,15 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing",
   beta <- beta.ols[-1]
   psi <- 1 / sigma.ols ^ 2
   gamma <- rep(1, p)
+  gamma.prob <- rep(0.5, p)
   if (model == "iprior_sing") {
     bvs_model <- bvs_iprior_sing
     lambda <- 1
   }
   if (model == "iprior_mult") {
     bvs_model <- bvs_iprior_mult
+    # mod <- iprior_canonical(y, X)
+    # lambda.mle <- mod$lambda
     lambda <- rep(1, p)
   }
   if (model == "iprior_mult_fixed") {
@@ -91,6 +94,14 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing",
                                thin = n.thin, method = "parallel", n.sims = n.par)
   cat("\n")
 
+  if (isTRUE(two.stage)) {
+    cat("Running second stage variable selection\n")
+    gamma.prob <- get_mpm(mod.fit) * 0.5
+    mod.fit <- runjags::run.jags(bvs_model, n.chains = n.chains, burnin = n.burnin,
+                                 adapt = n.adapt, sample = n.samp / n.chains,
+                                 thin = n.thin, method = "parallel", n.sims = n.par)
+  }
+
   # Results --------------------------------------------------------------------
   res <- list(mcmc = mod.fit, xnames = xnames)
 
@@ -101,7 +112,8 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing",
 
 #' @export
 ipriorBVS.formula <- function(formula, data = parent.frame(),
-                              model = "iprior_sing",
+                              model = "iprior_sing", two.stage = FALSE,
+                              stand.x = TRUE, stand.y = TRUE,
                               n.chains = parallel::detectCores(),
                               n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
                               n.thin = 1, n.par = n.chains, ...) {
@@ -112,8 +124,8 @@ ipriorBVS.formula <- function(formula, data = parent.frame(),
   X <- model.frame(Terms, mf)
   Y <- model.response(mf)
   colnames(X)
-  res <- ipriorBVS.default(Y, X, model, n.chains, n.samp, n.burnin, n.adapt, n.thin,
-                           n.par, ...)
+  res <- ipriorBVS.default(Y, X, model, two.stage, stand.x, stand.y, n.chains,
+                           n.samp, n.burnin, n.adapt, n.thin, n.par, ...)
   res
 }
 
