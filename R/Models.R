@@ -147,3 +147,53 @@ bvs_gprior <- "model{
 #monitor# gamma, beta, alpha, psi, deviance
 "
 
+
+bvs_iprior2 <- "model{
+  for (j in 1:p) { gl[j] <- gamma[j] * lambda[j] }
+
+  # Mean vector
+  for (i in 1:n) { mu[i] <- alpha }
+
+  # Psi inverse matrix = diag(1 / psi)
+  for (i in 1:n) {
+    for (j in 1:n) {
+      Psi.inv[i, j] <- equals(i, j) * psi
+    }
+  }
+
+  # H.lam matrix
+  for (j in 1:p) {
+    Hlamj[1:n, 1:n, j] <- gl[j] * H[1:n, 1:n, j]
+  }
+  Hlam <- Psi.inv
+  # for (i in 1:n) {
+  #   for (j in 1:n) {
+  #     for (k in 1:p) {
+  #       Hlam[i,j] <- Hlamj[k,i,j]
+  #     }
+  #   }
+  # }
+
+  # Covariance matrix for marginal y
+  Vy <- psi * Hlam %*% Hlam + Psi.inv
+
+  y[1:n] ~ dmnorm(mu, Vy)
+
+  # Priors
+  alpha ~ dnorm(0, 0.001)
+  psi ~ dgamma(0.001, 0.001)
+  for (j in 1:p) { gamma[j] ~ dbern(0.5) }
+  for (j in 1:p) { lambda[j] ~ dunif(0, 100) }
+
+  # Deviance
+  for (i in 1:n) {
+    d[i] <- log(2 * pi) - log(psi) + psi * pow(y[i] - mu[i], 2)
+  }
+  deviance <- sum(d)
+}
+
+#data# y, H, n, p, pi
+#inits# alpha, gamma, psi, lambda
+#monitor# gamma, lambda, alpha, psi, deviance
+"
+

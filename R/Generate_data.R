@@ -1,3 +1,4 @@
+#' @export
 gen_bvs <- function(n = 150, p = 100, snr = 0.9, sd = 2, seed = 123) {
   p.on <- floor(p * snr)
   p.off <- p - p.on
@@ -13,6 +14,7 @@ gen_bvs <- function(n = 150, p = 100, snr = 0.9, sd = 2, seed = 123) {
   dat
 }
 
+#' @export
 print.ipriorBVS_data <- function(x) {
   cat("n   = ", nrow(x$data), "\n")
   cat("p   = ", length(x$truth), "\n")

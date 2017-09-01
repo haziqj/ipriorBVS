@@ -1,9 +1,11 @@
-runjags::runjags.options(
-  silent.runjags = TRUE,
-  silent.jags = FALSE,
-  summary.warning = FALSE,
-  rng.warning = FALSE
-)
+.onLoad <- function(libname, pkgname) {
+  runjags::runjags.options(
+    silent.runjags = TRUE,
+    silent.jags = FALSE,
+    summary.warning = FALSE,
+    rng.warning = FALSE
+  )
+}
 
 #' @export
 ipriorBVS <- function(...) {
@@ -29,7 +31,8 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing",
     "iprior_mult",
     "iprior_mult_fixed",
     "flat_prior",
-    "gprior"
+    "gprior",
+    "iprior2"
   ))
 
   # # Default control for jags ---------------------------------------------------
@@ -75,6 +78,12 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing",
   if (model == "gprior") {
     bvs_model <- bvs_independent
   }
+  if (model == "iprior2") {
+    bvs_model <- bvs_iprior2
+    H <- array(NA, dim = c(n, n, p))
+    for (j in 1:p) H[1:n, 1:n, j] <- iprior::fnH2(X[, j])
+    lambda <- rep(1, p)
+  }
 
   # Run model
   mod.fit <- runjags::run.jags(bvs_model, n.chains = n.chains, burnin = n.burnin,
@@ -83,7 +92,6 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing",
   cat("\n")
 
   # Results --------------------------------------------------------------------
-  mod.fit <- runjags::combine.mcmc(mod.fit)
   res <- list(mcmc = mod.fit, xnames = xnames)
 
   # Output ---------------------------------------------------------------------
@@ -91,10 +99,11 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing",
   res
 }
 
+#' @export
 ipriorBVS.formula <- function(formula, data = parent.frame(),
                               model = "iprior_sing",
                               n.chains = parallel::detectCores(),
-                              n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
+                              n.samp = 1000, n.burnin = 400, n.adapt = 100,
                               n.thin = 1, n.par = n.chains, ...) {
   if (is.ipriorBVS_data(data)) data <- as.data.frame(data)
   mf <- model.frame(formula = formula, data = data)

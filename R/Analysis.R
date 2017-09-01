@@ -2,21 +2,28 @@ index_correct_choices <- function(x){
   paste(x, collapse = "")
 }
 
+# combine_mcmc <- function(x) {
+#   res <- suppressWarnings(runjags::combine.mcmc(x))
+# }
+
+#' @export
 get_gam_dat <- function(x) {
   if (is.ipriorBVS(x)) x <- x$mcmc
-  mod.fit.mcmc <- coda::as.mcmc(x)
+  mod.fit.mcmc <- suppressWarnings(suppressWarnings(coda::as.mcmc(x)))
   ind <- grep("gamma", colnames(mod.fit.mcmc))
   mod.fit.mcmc[, ind]
 }
 
+#' @export
 index_models <- function(x) {
   if (is.ipriorBVS(x)) x <- x$mcmc
   apply(get_gam_dat(x), 1, index_correct_choices)
 }
 
+#' @export
 get_dev_dat <- function(x) {
   if (is.ipriorBVS(x)) x <- x$mcmc
-  mod.fit.mcmc <- coda::as.mcmc(x)
+  mod.fit.mcmc <- suppressWarnings(coda::as.mcmc(x))
   ind <- grep("deviance", colnames(mod.fit.mcmc))
   mod.fit.mcmc[, ind]
 }
@@ -36,17 +43,22 @@ get_dev_dat <- function(x) {
 # tmp
 # }
 
+#' @export
 get_model_names <- function(x) {
   if (is.ipriorBVS(x)) x <- x$mcmc
   models <- index_models(x)
   names(sort(table(models), decreasing = TRUE))
 }
 
-calc_pips <- function(x) {
-  apply(get_gam_dat(x), 2, mean)
+#' @export
+get_pips <- function(x) {
+  res <- apply(get_gam_dat(x), 2, mean)
+  if (is.ipriorBVS(x)) names(res) <- x$xname
+  res
 }
 
-calc_deviances <- function(x) {
+#' @export
+get_deviances <- function(x) {
   if (is.ipriorBVS(x)) x <- x$mcmc
   deviances <- get_dev_dat(x)
   models.list <- index_models(x)
@@ -59,21 +71,39 @@ calc_deviances <- function(x) {
   res
 }
 
-calc_pmps <- function(x) {
+#' @export
+get_pmps <- function(x) {
   if (is.ipriorBVS(x)) x <- x$mcmc
   models.list <- index_models(x)
   sort(table(models.list)  / length(models.list), decreasing = TRUE)
 }
 
+#' @export
+get_hpm <- function(x) {
+  res <- get_pmps(x)[1]
+  res <- as.numeric(unlist(strsplit(names(res), split = "")))
+  if (is.ipriorBVS(x)) names(res) <- x$xname
+  res
+}
+
+#' @export
+get_mpm <- function(x) {
+  res <- tmp <- get_pips(x)
+  res[] <- 0
+  res[tmp >= 0.5] <- 1
+  res
+}
+
+#' @export
 tabulate_models <- function(x) {
   if (is.ipriorBVS(x)) x <- x$mcmc
-  tab <- calc_pmps(x)
+  tab <- get_pmps(x)
   res <- strsplit(names(tab), split = "")
   res <- as.data.frame(lapply(res, as.numeric))
   res <- rbind(res, tab)
   res <- rbind(res, tab / tab[1])  # Bayes Factors
-  res <- rbind(res, calc_deviances(x))  # Deviances
-  res <- cbind(c(calc_pips(x), NA, NA, NA), res)  # Post. incl. probs.
+  res <- rbind(res, get_deviances(x))  # Deviances
+  res <- cbind(c(get_pips(x), NA, NA, NA), res)  # Post. incl. probs.
   colnames(res) <- c("PIP", seq_len(ncol(res) - 1))
   prettify_table(res)
   # res
