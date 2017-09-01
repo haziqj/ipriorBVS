@@ -1,5 +1,5 @@
 #' @export
-predict.ipriorBVS <- function(object, truth = 1, ...) {
+predict.ipriorBVS <- function(object, truth, ...) {
   pips <- get_pips(object)
   brier <- mean((pips - truth) ^ 2)
   p <- length(pips)

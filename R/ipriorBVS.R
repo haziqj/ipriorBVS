@@ -103,7 +103,7 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing",
 ipriorBVS.formula <- function(formula, data = parent.frame(),
                               model = "iprior_sing",
                               n.chains = parallel::detectCores(),
-                              n.samp = 1000, n.burnin = 400, n.adapt = 100,
+                              n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
                               n.thin = 1, n.par = n.chains, ...) {
   if (is.ipriorBVS_data(data)) data <- as.data.frame(data)
   mf <- model.frame(formula = formula, data = data)
