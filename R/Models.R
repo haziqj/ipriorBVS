@@ -11,7 +11,9 @@ bvs_iprior_sing <-
 
   # Priors
   psi ~ dgamma(0.001, 0.001)
-  for (j in 1:p) { gamma[j] ~ dbern(gamma.prob[j]) }
+  for (j in 1:p) {
+    gamma[j] ~ dbern(gamma.prob[j])
+  }
   beta[1:p] ~ dmnorm(mu0, XTX.inv / (psi * lambda ^ 2))
   alpha ~ dnorm(0, 0.001)
   for (j in 1:p) {
@@ -44,9 +46,11 @@ bvs_iprior_mult <- "model{
   # Priors
   psi ~ dgamma(0.001, 0.001)
   alpha ~ dnorm(0, 0.001)
-  for (j in 1:p) { gamma[j] ~ dbern(gamma.prob[j]) }
-  for (j in 1:p) { mu0[j] <- 0 }
-  for (j in 1:p) { lambda[j] ~ dgamma(0.1, 0.1) }
+  for (j in 1:p) {
+    gamma[j] ~ dbern(gamma.prob[j])
+    mu0[j] <- 0
+    lambda[j] ~ dgamma(0.1, 0.1)
+  }
   for (j in 1:p) {
     for (k in 1:p) {
       lambda.inv[j,k] <- equals(j,k) / lambda[k]
@@ -80,8 +84,10 @@ bvs_iprior_mult_fixed <- "model{
   # Priors
   psi ~ dgamma(0.001, 0.001)
   alpha ~ dnorm(0, 0.001)
-  for (j in 1:p) { gamma[j] ~ dbern(gamma.prob[j]) }
-  for (j in 1:p) { mu0[j] <- 0 }
+  for (j in 1:p) {
+    gamma[j] ~ dbern(gamma.prob[j])
+    mu0[j] <- 0
+  }
   beta[1:p] ~ dmnorm(mu0, B / psi)
 
   # Deviance
