@@ -17,7 +17,7 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
                               stand.x = TRUE, stand.y = TRUE,
                               n.chains = parallel::detectCores(),
                               n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
-                              n.thin = 1, n.par = n.chains, priors = NULL, cl = NULL) {
+                              n.thin = 1, n.par = n.chains, priors = NULL) {
   y <- as.numeric(scale(y, scale = stand.y, center = stand.y))
   X <- scale(X, scale = stand.x, center = stand.x)
   XTX <- crossprod(X)
@@ -97,15 +97,10 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
   }
 
   # Run model
-  if (is.null(cl)) {
-    mod.fit <- runjags::run.jags(bvs_model, n.chains = n.chains, burnin = n.burnin,
-                                 adapt = n.adapt, sample = n.samp / n.chains,
-                                 thin = n.thin, method = method, n.sims = n.par, method = "parallel")
-  } else {
-    mod.fit <- runjags::run.jags(bvs_model, n.chains = n.chains, burnin = n.burnin,
-                                 adapt = n.adapt, sample = n.samp / n.chains, cl = cl,
-                                 thin = n.thin, method = method, n.sims = n.par, method = "rjparallel")
-  }
+  mod.fit <- runjags::run.jags(bvs_model, n.chains = n.chains, burnin = n.burnin,
+                               adapt = n.adapt, sample = n.samp / n.chains,
+                               thin = n.thin, method = "parallel", n.sims = n.par)
+
 
   cat("\n")
 
@@ -114,7 +109,7 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
     gamma.prob <- get_mpm(mod.fit) * 0.5
     mod.fit <- runjags::run.jags(bvs_model, n.chains = n.chains, burnin = n.burnin,
                                  adapt = n.adapt, sample = n.samp / n.chains,
-                                 thin = n.thin, method = method, n.sims = n.par)
+                                 thin = n.thin, method = "parallel", n.sims = n.par)
   }
 
   # Results --------------------------------------------------------------------
@@ -131,7 +126,7 @@ ipriorBVS.formula <- function(formula, data = parent.frame(),
                               stand.x = TRUE, stand.y = TRUE,
                               n.chains = parallel::detectCores(),
                               n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
-                              n.thin = 1, n.par = n.chains, priors = NULL, cl = NULL, ...) {
+                              n.thin = 1, n.par = n.chains, priors = NULL, ...) {
   if (is.ipriorBVS_data(data)) data <- as.data.frame(data)
   mf <- model.frame(formula = formula, data = data)
   tt <- terms(mf)
@@ -140,7 +135,7 @@ ipriorBVS.formula <- function(formula, data = parent.frame(),
   Y <- model.response(mf)
   colnames(X)
   res <- ipriorBVS.default(Y, X, model, two.stage, stand.x, stand.y, n.chains,
-                           n.samp, n.burnin, n.adapt, n.thin, n.par, priors, cl, ...)
+                           n.samp, n.burnin, n.adapt, n.thin, n.par, priors, ...)
   res
 }
 
