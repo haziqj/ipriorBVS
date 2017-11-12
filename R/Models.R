@@ -30,7 +30,7 @@ bvs_iprior_sing <-
 
 #data# y, X, XTX.inv, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi, lambda
-#monitor# gamma, beta, alpha, psi, deviance
+#monitor# gamma, alpha, gb, psi, deviance
 "
 
 bvs_iprior_mult <- "model{
@@ -68,7 +68,7 @@ bvs_iprior_mult <- "model{
 
 #data# y, X, XTX.inv, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi, lambda
-#monitor# gamma, beta, alpha, psi, deviance, lambda
+#monitor# gamma, alpha, gb, psi, deviance, lambda
 "
 
 bvs_iprior_mult_fixed <- "model{
@@ -99,7 +99,7 @@ bvs_iprior_mult_fixed <- "model{
 
 #data# y, X, B, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi
-#monitor# gamma, beta, alpha, psi, deviance
+#monitor# gamma, alpha, gb, psi, deviance
 "
 
 bvs_independent <- "model{
@@ -129,7 +129,7 @@ bvs_independent <- "model{
 
 #data# y, X, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi
-#monitor# gamma, beta, alpha, psi, deviance
+#monitor# gamma, alpha, gb, psi, deviance
 "
 
 bvs_gprior <- "model{
@@ -160,7 +160,7 @@ bvs_gprior <- "model{
 
 #data# y, X, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi
-#monitor# gamma, beta, alpha, psi, deviance
+#monitor# gamma, alpha, gb, psi, deviance
 "
 
 
@@ -210,6 +210,5 @@ bvs_iprior2 <- "model{
 
 #data# y, H, n, p, pi
 #inits# alpha, gamma, psi, lambda
-#monitor# gamma, lambda, alpha, psi, deviance
+#monitor# gamma, alpha, gb, psi, deviance
 "
-

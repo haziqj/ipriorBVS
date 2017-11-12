@@ -18,7 +18,8 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
                               n.chains = parallel::detectCores(),
                               n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
                               n.thin = 1, n.par = n.chains, priors = NULL) {
-  y <- as.numeric(scale(y, scale = stand.y, center = stand.y))
+  Y <- scale(y, scale = stand.y, center = stand.y)
+  y <- as.numeric(Y)
   X <- scale(X, scale = stand.x, center = stand.x)
   XTX <- crossprod(X)
   XTX.inv <- solve(XTX)
@@ -113,7 +114,7 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
   }
 
   # Results --------------------------------------------------------------------
-  res <- list(mcmc = mod.fit, xnames = xnames)
+  res <- list(mcmc = mod.fit, xnames = xnames, y = Y, X = X)
 
   # Output ---------------------------------------------------------------------
   class(res) <- "ipriorBVS"

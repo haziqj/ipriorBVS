@@ -112,9 +112,10 @@ tabulate_models <- function(x) {
 prettify_table <- function(x) {
   res <- x
   p <- nrow(res) - 3
-  res[, 1] <- c(dec_plac(x[1:p, 1], k = 3), "", "", "")
-  res[-nrow(res), -1] <- apply(x[-nrow(res), -1, drop = FALSE], 2, dec_plac, k = 3)
-  res[nrow(res), -1] <- dec_plac(x[nrow(res), -1, drop = FALSE], k = 2)
+  res[, 1] <- c(iprior::dec_plac(x[1:p, 1], k = 3), "", "", "")
+  res[-nrow(res), -1] <- apply(x[-nrow(res), -1, drop = FALSE], 2,
+                               iprior::dec_plac, k = 3)
+  res[nrow(res), -1] <- iprior::dec_plac(x[nrow(res), -1, drop = FALSE], k = 2)
   res[1:p, -1] <- apply(res[1:p, -1, drop = FALSE], 2, change_10)
   rownames(res)[-(1:p)] <- c("PMP", "BF", "Deviance")
   as.data.frame(res)
@@ -125,3 +126,51 @@ change_10 <- function(x) {
   res[grep("0.000", x)] <- ""
   res
 }
+
+coef.ipriorBVS <- function(object, ...) {
+  mny <- attr(object$y, "scaled:center")
+  sdy <- attr(object$y, "scaled:scale")
+  mnx <- attr(object$X, "scaled:center")
+  sdx <- attr(object$X, "scaled:scale")
+  tmp <- object$mcmc$summaries
+
+  beta <- tmp[grep("gb", rownames(tmp)), ]
+  beta <- beta * sdy / sdx
+
+  alpha <- tmp["alpha", ]
+  alpha <- alpha * sdy + mny - sum(beta[, "Mean"] * mnx)
+
+  tab <- rbind(alpha, beta)
+  tab <- tab[, c("Mean", "SD", "Lower95", "Upper95")]
+
+  # Correct intercept stuff
+  tab[1, "SD"] <- tmp["alpha", "SD"] * sdy
+
+  rownames(tab) <- c("Intercept", object$xnames)
+  colnames(tab) <- c("Mean", "S.D.", "2.5%", "97.5%")
+
+  res <- list(tab = tab, pips = c(1, get_pips(object)))
+  class(res) <- "ipriorBVS_coef"
+  res
+}
+
+print.ipriorBVS_coef <- function(x, sf = 3, ...) {
+  res <- x$tab
+  res <- iprior::dec_plac(res, sf)
+  res <- cbind(PIP = iprior::dec_plac(x$pips, sf), res)
+  rownames(res)[1] <- "(Intercept)"
+  print(as.data.frame(res))
+}
+
+plot.ipriorBVS_coef <- function(x, ...) {
+  plot.df <- as.data.frame(x$tab)[-1, ]
+  names(plot.df) <- c("mean", "sd", "lower", "upper")
+  plot.df <- data.frame(x = rownames(plot.df), plot.df)
+  plot.df$x <- factor(plot.df$x, levels = rev(rownames(plot.df)))
+  plot.df$x
+  ggplot(plot.df, aes(x = x, y = mean)) +
+    geom_pointrange(aes(ymin = lower, ymax = upper)) +
+    coord_flip() +
+    theme_bw()
+}
+
