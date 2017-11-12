@@ -127,6 +127,7 @@ change_10 <- function(x) {
   res
 }
 
+#' @export
 coef.ipriorBVS <- function(object, ...) {
   mny <- attr(object$y, "scaled:center")
   sdy <- attr(object$y, "scaled:scale")
@@ -154,6 +155,7 @@ coef.ipriorBVS <- function(object, ...) {
   res
 }
 
+#' @export
 print.ipriorBVS_coef <- function(x, sf = 3, ...) {
   res <- x$tab
   res <- iprior::dec_plac(res, sf)
@@ -162,6 +164,7 @@ print.ipriorBVS_coef <- function(x, sf = 3, ...) {
   print(as.data.frame(res))
 }
 
+#' @export
 plot.ipriorBVS_coef <- function(x, ...) {
   plot.df <- as.data.frame(x$tab)[-1, ]
   names(plot.df) <- c("mean", "sd", "lower", "upper")

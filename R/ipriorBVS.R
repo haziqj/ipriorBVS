@@ -5,6 +5,7 @@
     summary.warning = FALSE,
     rng.warning = FALSE
   )
+  rjags::load.module("lecuyer")
 }
 
 #' @export

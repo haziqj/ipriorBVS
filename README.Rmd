@@ -1,0 +1,56 @@
+---
+title: "R/ipriorBVS: Bayesian Variable Selection for Linear Models using I-priors"
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, collapse = TRUE)
+library(ipriorBVS)
+library(rjags)
+load.module("lecuyer")
+runjags::runjags.options(
+  silent.runjags = TRUE,
+  silent.jags = FALSE,
+  summary.warning = FALSE,
+  rng.warning = FALSE
+)
+```
+
+Bayesian variable selection for linear models using I-priors in R.
+This work is part of the PhD project entitled *Regression Modelling with Priors using Fisher Information Covariance Kernels (I-priors)*.
+Visit [http://phd.haziqj.ml](http://phd.haziqj.ml) for details.
+
+## Benchmark data (Tibshirani, 1996)
+
+A toy data set designed by [Tibshirani (1996)](https://statweb.stanford.edu/~tibs/lasso/lasso.pdf), often used to compare variable selection methods. 
+`n = 20` data points are generated from a linear model with parameters `beta = c(3, 1.5, 0, 0, 2, 0, 0, 0)` and `sigma = 3`.
+The `X` are generated from a normal distribution with mean zero, and the correlation between the `i`th and `j`th variable is `0.5 ^ abs(i - j)`.
+This is implemented in the `gen_benchmark()` function included in the package.
+
+```{r, cache = TRUE}
+(dat <- gen_benchmark(n = 50, sd = 3, seed = 123))
+```
+
+### Model fit
+
+The model fitted either using formula or non-formula syntax. 
+We are then able to obtain posterior inclusion probabilities (PIPs) for the each variable, and also posterior model probabilities (PMPs).
+For comparison, Bayes factors and deviances are reported as well.
+
+```{r, cache = TRUE}
+runjags::runjags.options(silent.jags = TRUE, silent.runjags = TRUE)
+(mod <- ipriorBVS(y ~ ., dat))
+```
+
+### Coefficients
+
+The model coefficients are averaged across all probable sub-models, which yields a kind of "model-averaged" coefficients.
+
+```{r}
+coef(mod)
+```
+
+***
+
+Copyright (C) 2017 [Haziq Jamil](http://haziqj.ml).
