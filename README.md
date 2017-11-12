@@ -7,7 +7,7 @@ Bayesian variable selection for linear models using I-priors in R. This work is 
 Benchmark data (Tibshirani, 1996)
 ---------------------------------
 
-A toy data set designed by [Tibshirani (1996)](https://statweb.stanford.edu/~tibs/lasso/lasso.pdf), often used to compare variable selection methods. `n = 20` data points are generated from a linear model with parameters `beta = c(3, 1.5, 0, 0, 2, 0, 0, 0)` and `sigma = 3`. The `X` are generated from a normal distribution with mean zero, and the correlation between the `i`th and `j`th variable is `0.5 ^ abs(i - j)`. This is implemented in the `gen_benchmark()` function included in the package.
+A toy data set designed by [Tibshirani (1996)](https://statweb.stanford.edu/~tibs/lasso/lasso.pdf), often used to compare variable selection methods. `n = 50` data points are generated from a linear model with parameters `beta = c(3, 1.5, 0, 0, 2, 0, 0, 0)` and `sigma = 3`. The `X` are generated from a normal distribution with mean zero, and the correlation between the `i`th and `j`th variable is `0.5 ^ abs(i - j)`. This is implemented in the `gen_benchmark()` function included in the package.
 
 ``` r
 (dat <- gen_benchmark(n = 50, sd = 3, seed = 123))
