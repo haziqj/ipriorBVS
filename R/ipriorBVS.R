@@ -18,7 +18,8 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
                               stand.x = TRUE, stand.y = TRUE,
                               n.chains = parallel::detectCores(),
                               n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
-                              n.thin = 1, n.par = n.chains, priors = NULL) {
+                              n.thin = 1, n.par = n.chains, priors = NULL,
+                              gamma.prob = rep(0.5, p)) {
   Y <- scale(y, scale = stand.y, center = stand.y)
   y <- as.numeric(Y)
   X <- scale(X, scale = stand.x, center = stand.x)
@@ -60,7 +61,7 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
   beta <- beta.ols[-1]
   psi <- 1 / sigma.ols ^ 2
   gamma <- rep(1, p)
-  gamma.prob <- rep(0.5, p)
+  # gamma.prob <- rep(0.5, p)  # now a function argument
   if (model == "iprior_sing") {
     bvs_model <- bvs_iprior_sing
     lambda <- 1
@@ -128,7 +129,8 @@ ipriorBVS.formula <- function(formula, data = parent.frame(),
                               stand.x = TRUE, stand.y = TRUE,
                               n.chains = parallel::detectCores(),
                               n.samp = 10000, n.burnin = 4000, n.adapt = 1000,
-                              n.thin = 1, n.par = n.chains, priors = NULL, ...) {
+                              n.thin = 1, n.par = n.chains, priors = NULL,
+                              gamma.prob = rep(0.5, p), ...) {
   if (is.ipriorBVS_data(data)) data <- as.data.frame(data)
   mf <- model.frame(formula = formula, data = data)
   tt <- terms(mf)
@@ -137,7 +139,7 @@ ipriorBVS.formula <- function(formula, data = parent.frame(),
   Y <- model.response(mf)
   colnames(X)
   res <- ipriorBVS.default(Y, X, model, two.stage, stand.x, stand.y, n.chains,
-                           n.samp, n.burnin, n.adapt, n.thin, n.par, priors, ...)
+                           n.samp, n.burnin, n.adapt, n.thin, n.par, priors, gamma.prob, ...)
   res
 }
 
