@@ -133,7 +133,12 @@ coef.ipriorBVS <- function(object, ...) {
   sdy <- attr(object$y, "scaled:scale")
   mnx <- attr(object$X, "scaled:center")
   sdx <- attr(object$X, "scaled:scale")
-  tmp <- object$mcmc$summaries
+  if (is.null(mny)) mny <- 0
+  if (is.null(sdy)) sdy <- 1
+  if (is.null(mnx)) mnx <- 0
+  if (is.null(sdx)) sdx <- 1
+
+  tmp <- summary(object)
 
   beta <- tmp[grep("gb", rownames(tmp)), ]
   beta <- beta * sdy / sdx
@@ -176,4 +181,78 @@ plot.ipriorBVS_coef <- function(x, ...) {
     coord_flip() +
     theme_bw()
 }
+
+plot_coef <- function(x, ncol = 2) {
+  mcmc.samp <- x$mcmc$sample
+  n.chain <- length(x$mcmc$mcmc)
+  total.mcmc <- mcmc.samp * n.chain
+  plot.df <- ggmcmc::ggs(x$mcmc$mcmc, family = "gb")
+
+  plot.df <- plot.df[plot.df$value != 0, ]
+  pips <- get_pips(x)
+  params <- levels(plot.df$Parameter)[pips != 0]
+  xnames <- x$xnames[pips != 0]
+  levels(plot.df$Parameter) <- x$xnames
+  y.pips <- c(rbind(0, 1 - pips[pips != 0]))
+
+  p <- ggplot(plot.df) +
+    geom_line(aes(x = value, y = ..count.. / 10000,
+                  col = factor(Chain)), stat = "density") +
+    facet_wrap(~ Parameter, ncol = ncol) +
+    theme_bw() +
+    theme(legend.pos = "none") +
+    labs(x = "Coefficient", y = "Density")
+
+  # Find y value at which zero density starts
+  tmp <- ggplot_build(p)$data[[1]]
+  ind2 <- which(c(1, sign(tmp$x)) < c(sign(tmp$x), 1))
+  ind1 <- ind2 - 1
+  y1 <- tmp[ind1, ]$y
+  x1 <- tmp[ind1, ]$x
+  y2 <- tmp[ind2, ]$y
+  x2 <- tmp[ind2, ]$x
+  # y.zero <- y1 + ((y2 - y1) / (x2 - x1)) * x1
+  y.zero <- y2
+  # Construct data frame for the point mass at zero
+  zero.dens <- 1 - sapply(mod$mcmc$mcmc, function(x) apply(x[, grep("gamma", colnames(x))], 2, mean))
+  zero.dens1 <- reshape2::melt(zero.dens)
+  levels(zero.dens1$Var1) <- x$xnames
+  zero.dens0 <- data.frame(Var1 = rep(x$xnames, each = n.chain),
+                           Var2 = rep(seq_len(n.chain), length(x$xnames)),
+                           value = y.zero)
+  pip.df <- cbind(rbind(zero.dens0, zero.dens1), x = 0)
+  colnames(pip.df) <- c("Parameter", "Chain", "y", "x")
+
+  ggplot(plot.df) +
+    geom_line(data = pip.df, aes(x, y, col = factor(Chain)),
+              position = position_dodge(width = 0.05), size = 0.3) +
+    geom_line(aes(x = value, y = ..count.. / 10000,
+                  col = factor(Chain)), stat = "density") +
+    facet_wrap(~ Parameter, ncol = ncol) +
+    theme_bw() +
+    theme(legend.pos = "none") +
+    labs(x = "Coefficient", y = "Density")
+}
+
+plot_coef2 <- function(x, ncol = 2, xnames = NULL) {
+  plot.df <- ggmcmc::ggs(x$mcmc$mcmc, family = "gb")
+  if (is.null(xnames)) xnames <- x$xnames
+  levels(plot.df$Parameter) <- xnames
+
+  ggplot(plot.df) +
+    geom_line(aes(x = value, y = ..count.. / 10000,
+                  col = factor(Chain)), stat = "density") +
+    facet_wrap(~ Parameter, ncol = ncol) +
+    scale_colour_discrete(name = "Chain") +
+    coord_cartesian(ylim = c(0, 1)) +
+    theme_bw() +
+    theme(legend.pos = "top") +
+    labs(x = "Coefficient", y = "Density") +
+    guides(col = guide_legend(nrow = 1))
+}
+
+
+
+
+
 

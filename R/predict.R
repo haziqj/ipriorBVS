@@ -24,3 +24,24 @@ print.ipriorBVS_predict <- function(x) {
   cat("False inclusions =", x$false.inc, "\n")
   cat("False exclusions =", x$false.exc, "\n")
 }
+
+#' @export
+get_predict <- function(object, newdata, y.test = NULL) {
+  beta <- coef(object)$tab[, "Mean"]
+  X <- newdata
+  y.hat <- beta[1] + X %*% beta[-1]
+  if (!is.null(y.test)) test.error <- mean((y.test - y.hat) ^ 2)
+  else test.error <- NULL
+
+  list(y.hat = as.numeric(y.hat), mse = test.error)
+}
+
+#' @export
+get_R2 <- function(object) {
+  model.var <- 1 / summary(object)["psi", "Mean"]
+  y.var <- attr(object$y, "scaled:scale")
+  if (is.null(y.var)) y.var <- 1
+  else y.var <- y.var ^ 2
+  res <- 1 - model.var / y.var
+  res
+}

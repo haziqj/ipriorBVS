@@ -14,12 +14,13 @@ bvs_iprior_sing <-
   for (j in 1:p) {
     gamma[j] ~ dbern(gamma.prob[j])
   }
-  beta[1:p] ~ dmnorm(mu0, XTX.inv / (psi * lambda ^ 2))
+  beta[1:p] ~ dmnorm(mu0, psi * XTX.inv / lambda)
   alpha ~ dnorm(0, 0.001)
   for (j in 1:p) {
     mu0[j] <- 0
   }
   lambda ~ dgamma(0.001, 0.001)
+  lambdaa <- sqrt(lambda / psi ^ 2)
 
   # Deviance
   for (i in 1:n) {
@@ -30,7 +31,7 @@ bvs_iprior_sing <-
 
 #data# y, X, XTX.inv, n, p, pi, gamma.prob
 #inits# alpha, beta, gamma, psi, lambda
-#monitor# gamma, alpha, gb, psi, deviance
+#monitor# gamma, alpha, gb, lambdaa, psi, deviance
 "
 
 bvs_iprior_mult <- "model{
