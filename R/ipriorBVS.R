@@ -24,7 +24,7 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
   y <- as.numeric(Y)
   X <- scale(X, scale = stand.x, center = stand.x)
   XTX <- crossprod(X)
-  XTX.inv <- solve(XTX)
+  # XTX.inv <- solve(XTX)
   p <- ncol(X)
   n <- nrow(X)
   xnames <- colnames(X)
@@ -74,6 +74,7 @@ ipriorBVS.default <- function(y, X, model = "iprior_sing", two.stage = FALSE,
     lambda <- rep(1, p)
   }
   if (model == "iprior_mult_fixed") {
+    stop("Need to resolve XTX.inv in p > n case.")
     bvs_model <- bvs_iprior_mult_fixed
     mod <- iprior_canonical(y, X)
     lambda <- mod$lambda
