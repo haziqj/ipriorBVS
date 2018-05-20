@@ -182,6 +182,7 @@ plot.ipriorBVS_coef <- function(x, ...) {
     theme_bw()
 }
 
+#' @export
 plot_coef <- function(x, ncol = 2) {
   mcmc.samp <- x$mcmc$sample
   n.chain <- length(x$mcmc$mcmc)
@@ -234,6 +235,7 @@ plot_coef <- function(x, ncol = 2) {
     labs(x = "Coefficient", y = "Density")
 }
 
+#' @export
 plot_coef2 <- function(x, ncol = 2, xnames = NULL) {
   plot.df <- ggmcmc::ggs(x$mcmc$mcmc, family = "gb")
   if (is.null(xnames)) xnames <- x$xnames
